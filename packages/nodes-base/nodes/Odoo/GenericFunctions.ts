@@ -10,6 +10,7 @@ import { NodeApiError, randomInt } from 'n8n-workflow';
 
 const serviceJSONRPC = 'object';
 const methodJSONRPC = 'execute';
+const methodJSONRPCExecuteKwargs = 'execute_kw';
 
 export const mapOperationToJSONRPC = {
 	create: 'create',
@@ -259,6 +260,7 @@ export async function odooGetAll(
 	filters?: IOdooFilterOperations,
 	fieldsToReturn?: IDataObject[],
 	limit = 0,
+	context?: IDataObject,
 ) {
 	try {
 		const body = {
@@ -266,7 +268,7 @@ export async function odooGetAll(
 			method: 'call',
 			params: {
 				service: serviceJSONRPC,
-				method: methodJSONRPC,
+				method: methodJSONRPCExecuteKwargs,
 				args: [
 					db,
 					userID,
@@ -274,9 +276,12 @@ export async function odooGetAll(
 					mapOdooResources[resource] || resource,
 					mapOperationToJSONRPC[operation],
 					(filters && processFilters(filters)) || [],
-					fieldsToReturn || [],
-					0, // offset
-					limit,
+					{
+						fields: fieldsToReturn || [],
+						offset: 0,
+						limit: limit,
+						context: context || {},
+					}
 				],
 			},
 			id: randomInt(100),

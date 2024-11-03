@@ -282,6 +282,50 @@ export const customResourceDescription: INodeProperties[] = [
 			},
 		],
 	},
+	{
+		displayName: 'Context',
+		name: 'context',
+		type: 'fixedCollection',
+		typeOptions: {
+			multipleValues: true,
+			multipleValueButtonText: 'Add Context',
+		},
+		default: {},
+		description: 'Add context to the request',
+		placeholder: 'Add context variable',
+		displayOptions: {
+			show: {
+				operation: ['getAll'],
+				resource: ['custom'],
+			},
+		},
+		options: [
+			{
+				name: 'fields',
+				displayName: 'Context Variables',
+				values: [
+					{
+						displayName: 'Name',
+						name: 'fieldName',
+						type: 'options',
+						description: 'Choose from the list',
+						default: '',
+						typeOptions: {
+							loadOptionsDependsOn: ['customResource'],
+							loadOptionsMethod: 'getContextFields',
+						},
+					},
+					{
+						displayName: 'Value',
+						name: 'fieldValue',
+						type: 'string',
+						default: '',
+						description: 'Specify context variable value',
+					},
+				],
+			},
+		],
+	},
 	/* -------------------------------------------------------------------------- */
 	/*                                custom:update                               */
 	/* -------------------------------------------------------------------------- */

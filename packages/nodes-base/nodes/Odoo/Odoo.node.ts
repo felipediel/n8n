@@ -231,6 +231,50 @@ export class Odoo implements INodeType {
 
 				return options.sort((a, b) => a.name?.localeCompare(b.name) || 0) as INodePropertyOptions[];
 			},
+			async getContextFields(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
+				const staticContextFields: INodePropertyOptions[] = [
+					{ name: 'User ID', value: 'uid' },
+					{ name: 'Company ID', value: 'company_id' },
+					{ name: 'Date', value: 'date' },
+					{ name: 'Timestamp', value: 'timestamp' },
+					{ name: 'Timezone', value: 'tz' },
+					{ name: 'Active Model', value: 'active_model' },
+					{ name: 'Active ID', value: 'active_id' },
+					{ name: 'Active IDs', value: 'active_ids' },
+					{ name: 'Language', value: 'lang' },
+				];
+
+				let resource = this.getCurrentNodeParameter('resource') as string;
+				if (resource === 'custom') {
+					resource = this.getCurrentNodeParameter('customResource') as string;
+					if (!resource) return staticContextFields;
+				}
+
+				const credentials = await this.getCredentials('odooApi');
+				const url = credentials.url as string;
+				const username = credentials.username as string;
+				const password = credentials.password as string;
+				const db = odooGetDBName(credentials.db as string, url);
+				const userID = await odooGetUserID.call(this, db, username, password, url);
+
+    			const response = await odooGetModelFields.call(
+					this,
+					db,
+					userID,
+					password,
+					resource,
+					url
+				) as IDataObject[];
+
+				const dynamicContextFields = Object.values(response)
+					.filter(({ readonly }) => !readonly)
+					.map(({ name }) => ({
+						name: `Default Value: ${name}`,
+						value: `default_${name}`,
+					}));
+
+				return [...staticContextFields, ...dynamicContextFields];
+			}
 		},
 		credentialTest: {
 			async odooApiTest(
@@ -492,6 +536,8 @@ export class Odoo implements INodeType {
 						const options = this.getNodeParameter('options', i);
 						const fields = (options.fieldsList as IDataObject[]) || [];
 						const filter = this.getNodeParameter('filterRequest', i) as IOdooFilterOperations;
+						const context = this.getNodeParameter('context', i) as IDataObject;
+
 						if (returnAll) {
 							responseData = await odooGetAll.call(
 								this,
@@ -503,6 +549,8 @@ export class Odoo implements INodeType {
 								url,
 								filter,
 								fields,
+								undefined,
+								processNameValueFields(context)
 							);
 						} else {
 							const limit = this.getNodeParameter('limit', i);
@@ -517,6 +565,7 @@ export class Odoo implements INodeType {
 								filter,
 								fields,
 								limit,
+								processNameValueFields(context)
 							);
 						}
 					}
